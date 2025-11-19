@@ -148,6 +148,8 @@ class DQNAgent:
         loss = loss_fn(q_vals, target)
         self.optimizer.zero_grad()
         loss.backward()
+        # Gradient clipping for stability
+        torch.nn.utils.clip_grad_norm_(self.q.parameters(), max_norm=10.0)
         self.optimizer.step()
         return float(loss.item())
 
@@ -393,8 +395,8 @@ def parse_args():
     p.add_argument("--gamma", type=float, default=0.99, help="Discount factor.")
     p.add_argument("--lr", type=float, default=5e-4, help="Learning rate.")
     p.add_argument("--eps-start", type=float, default=1.0, help="Initial epsilon.")
-    p.add_argument("--eps-end", type=float, default=0.01, help="Minimum epsilon.")
-    p.add_argument("--eps-decay", type=float, default=0.997, help="Multiplicative epsilon decay per episode.")
+    p.add_argument("--eps-end", type=float, default=0.05, help="Minimum epsilon.")
+    p.add_argument("--eps-decay", type=float, default=0.995, help="Multiplicative epsilon decay per episode.")
     p.add_argument("--target-update-freq", type=int, default=1000, help="Frequency for target net update (depends on mode).")
     p.add_argument(
         "--target-update-mode",
@@ -403,7 +405,7 @@ def parse_args():
         help="Update target by steps or by episodes.",
     )
     p.add_argument("--seed", type=int, default=42, help="Random seed.")
-    p.add_argument("--early-stop-avg", type=float, default=475.0, help="Avg reward threshold for early stop (set negative to disable).")
+    p.add_argument("--early-stop-avg", type=float, default=450.0, help="Avg reward threshold for early stop (set negative to disable).")
     p.add_argument("--early-stop-window", type=int, default=50, help="Window size for early-stop averaging.")
     p.add_argument("--evaluate", action="store_true", help="Evaluate saved model (no exploration).")
     p.add_argument("--eval-episodes", type=int, default=5, help="Episodes to evaluate.")
