@@ -1,8 +1,6 @@
 # Reinforcement Learning: Inverted Pendulum (CartPole-v1) DQN
 
-**Student:** [Your Name]  
-**Course:** [Course Code/Name]  
-**Date:** November 20, 2025
+**Student:** Priyankesh 
 
 ---
 
@@ -249,13 +247,5 @@ The DQN algorithm is well-suited because:
 - Gymnasium Documentation: https://gymnasium.farama.org/
 - PyTorch Documentation: https://pytorch.org/docs/
 
----
 
-## Acknowledgments
-
-This implementation was developed as part of a reinforcement learning course assignment, demonstrating the practical application of DQN to a classic control problem. The code is self-contained and suitable for educational purposes.
-
----
-
-**For questions or clarifications, please contact [your email/contact information].**
 
