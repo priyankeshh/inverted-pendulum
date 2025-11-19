@@ -1,0 +1,8 @@
+gymnasium[classic-control]
+torch
+numpy
+matplotlib
+tqdm
+imageio
+ipython
+
