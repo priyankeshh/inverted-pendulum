@@ -42,6 +42,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from gymnasium.envs.classic_control import CartPoleEnv
+from gymnasium import spaces
+try:
+    from PIL import Image, ImageDraw, ImageEnhance
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 
 # ----------------------- Artifacts -----------------------
@@ -60,6 +67,88 @@ def set_seed(seed: int = 42):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+
+
+# ----------------------- Custom CartPole with Better Colors -----------------------
+class StyledCartPoleEnv(gym.Wrapper):
+    """Wrapper to customize CartPole visualization with enhanced colors"""
+    
+    def __init__(self, env, 
+                 cart_color=(50, 100, 200),      # Blue cart
+                 pole_color=(200, 50, 50),        # Red pole
+                 track_color=(100, 100, 100)):    # Gray track
+        super().__init__(env)
+        self.env = env
+        self.cart_color = np.array(cart_color, dtype=np.uint8)
+        self.pole_color = np.array(pole_color, dtype=np.uint8)
+        self.track_color = np.array(track_color, dtype=np.uint8)
+    
+    def reset(self, **kwargs):
+        return self.env.reset(**kwargs)
+    
+    def step(self, action):
+        return self.env.step(action)
+    
+    def render(self):
+        """Override rendering to apply custom color scheme"""
+        frame = self.env.render()
+        
+        if self.render_mode == "rgb_array" and frame is not None:
+            # Apply color enhancement
+            frame = self._apply_custom_colors(frame)
+        
+        return frame
+    
+    def _apply_custom_colors(self, frame):
+        """Apply custom color scheme to the rendered frame"""
+        # Convert to float for processing
+        enhanced = frame.astype(np.float32)
+        
+        # Enhance contrast slightly
+        enhanced = np.clip((enhanced - 128) * 1.15 + 128, 0, 255)
+        
+        # The gymnasium CartPole renders:
+        # - Cart as dark gray/black (~0-50 range)
+        # - Pole as dark gray/black 
+        # - Background as white (255)
+        # - Track as light gray (~200)
+        
+        # Create mask for dark pixels (cart and pole)
+        dark_mask = (frame[:, :, 0] < 80) & (frame[:, :, 1] < 80) & (frame[:, :, 2] < 80)
+        
+        # Identify pole vs cart by position (pole is thinner, more vertical)
+        height, width = frame.shape[:2]
+        y_coords, x_coords = np.mgrid[0:height, 0:width]
+        
+        # Pole is typically in upper portion and narrower
+        pole_mask = dark_mask & (y_coords < height * 0.65)
+        cart_mask = dark_mask & (y_coords >= height * 0.65)
+        
+        # Apply colors
+        enhanced[pole_mask] = self.pole_color
+        enhanced[cart_mask] = self.cart_color
+        
+        # Enhance track (light gray pixels)
+        track_mask = (frame[:, :, 0] > 150) & (frame[:, :, 0] < 220) & \
+                     (frame[:, :, 1] > 150) & (frame[:, :, 1] < 220)
+        enhanced[track_mask] = self.track_color
+        
+        return enhanced.astype(np.uint8)
+
+
+def make_styled_cartpole(render_mode=None, 
+                         cart_color=(50, 100, 200), 
+                         pole_color=(200, 50, 50),
+                         track_color=(100, 100, 100)):
+    """Create CartPole with custom color scheme
+    
+    Args:
+        cart_color: RGB tuple for cart (default: blue)
+        pole_color: RGB tuple for pole (default: red)
+        track_color: RGB tuple for track (default: gray)
+    """
+    env = gym.make("CartPole-v1", render_mode=render_mode)
+    return StyledCartPoleEnv(env, cart_color, pole_color, track_color)
 
 
 # ----------------------- Network -----------------------
@@ -326,7 +415,13 @@ def record_gif(gif_path: Path = GIF_PATH, seed: int = 42):
         return
     set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    env = gym.make("CartPole-v1", render_mode="rgb_array")
+    # Use styled environment with custom colors
+    env = make_styled_cartpole(
+        render_mode="rgb_array",
+        cart_color=(60, 120, 216),   # Bright blue cart
+        pole_color=(220, 60, 60),     # Red pole
+        track_color=(80, 80, 80)      # Dark gray track
+    )
     obs_size = env.observation_space.shape[0]
     n_actions = env.action_space.n
     agent = DQNAgent(obs_size, n_actions, lr=1e-3, gamma=0.99, device=device)
@@ -354,7 +449,13 @@ def record_mp4(filename: str = "cartpole_run.mp4", seed: int = 42):
         return
     set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    env = gym.make("CartPole-v1", render_mode="rgb_array")
+    # Use styled environment with custom colors
+    env = make_styled_cartpole(
+        render_mode="rgb_array",
+        cart_color=(60, 120, 216),   # Bright blue cart
+        pole_color=(220, 60, 60),     # Red pole
+        track_color=(80, 80, 80)      # Dark gray track
+    )
     obs_size = env.observation_space.shape[0]
     n_actions = env.action_space.n
     agent = DQNAgent(obs_size, n_actions, lr=1e-3, gamma=0.99, device=device)
