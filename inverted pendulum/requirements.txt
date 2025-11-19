@@ -1,0 +1,8 @@
+gymnasium[classic-control]==0.29.1
+torch==2.4.1
+numpy==1.26.4
+matplotlib==3.8.4
+tqdm==4.66.5
+imageio==2.34.1
+ipython==8.26.0
+
